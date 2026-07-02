@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Flask
+instance/
+*.db
+
+# Media uploads
+media/
+
+# Environment variables
+.env
+
+# PyTorch model (large file)
+dlmodel/model.pth
