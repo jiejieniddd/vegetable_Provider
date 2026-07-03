@@ -1,6 +1,5 @@
 import os
 import traceback
-from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, jsonify, session, redirect, g, send_from_directory
 from flask_mail import Message
@@ -8,9 +7,9 @@ from flask_mail import Message
 import commands
 from decorators import login_required
 from dlmodel import predict
-from exts import db, migrate, mail
+from exts import db, migrate, mail, init_redis, redis_client
 
-from models import User, EmailCode, Vegetable, VegetableCategory
+from models import User, Vegetable, VegetableCategory
 import config
 import random
 import string
@@ -22,6 +21,7 @@ app.config.from_object(config)
 db.init_app(app)
 migrate.init_app(app, db)
 mail.init_app(app)
+init_redis(app)
 
 # 创建命令
 app.cli.command("init_category")(commands.init_vegetable_category)
@@ -68,12 +68,16 @@ def register():
             username = request.form.get('username')
             password = request.form.get('password')
             code = request.form.get('code')
-            code_model = db.session.scalar(db.select(EmailCode).where(EmailCode.email == email, EmailCode.code == code))
-            if not code_model or (datetime.now() - code_model.create_time) > timedelta(minutes=10):
+            # 从Redis中获取验证码
+            redis_key = f"email_code:{email}"
+            stored_code = redis_client.get(redis_key)
+            if not stored_code or stored_code != code:
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({"result": False, "message": "请输入正确的验证码!"})
                 else:
                     return render_template('register.html', error="请输入正确的验证码!")
+            # 验证成功后删除验证码
+            redis_client.delete(redis_key)
 
             # 检查邮箱是否已注册
             existing_user = db.session.scalar(db.select(User).where(User.email == email))
@@ -119,10 +123,9 @@ def get_email_code():
         mail.send(message)
     except Exception as e:
         return jsonify({"result": False, "message": f"发送邮件失败:{e}"})
-    # memcached/redis
-    code_model = EmailCode(email=email, code=code)
-    db.session.add(code_model)
-    db.session.commit()
+    # 将验证码存储到Redis，设置10分钟过期
+    redis_key = f"email_code:{email}"
+    redis_client.setex(redis_key, 600, code)  # 600秒 = 10分钟
     return jsonify({"result": True, "message": None})
 
 

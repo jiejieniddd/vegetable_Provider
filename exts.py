@@ -3,6 +3,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 from flask_migrate import Migrate
 from flask_mail import Mail
+import redis
 
 
 class Base(DeclarativeBase):
@@ -17,3 +18,16 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 migrate = Migrate(db)
 mail = Mail()
+
+# Redis连接
+redis_client = None
+
+def init_redis(app):
+    global redis_client
+    redis_client = redis.Redis(
+        host=app.config.get('REDIS_HOST', 'localhost'),
+        port=app.config.get('REDIS_PORT', 6379),
+        password=app.config.get('REDIS_PASSWORD', None),
+        db=app.config.get('REDIS_DB', 0),
+        decode_responses=True
+    )

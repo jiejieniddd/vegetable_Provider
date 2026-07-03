@@ -20,3 +20,9 @@ SECRET_KEY = "kfalfkda2344"
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 MEDIA_DIR = os.path.join(BASE_DIR, "media")
+
+# Redis配置
+REDIS_HOST = "192.168.18.136"
+REDIS_PORT = 6379
+REDIS_PASSWORD = "123456"
+REDIS_DB = 0
