@@ -27,3 +27,8 @@ media/
 
 # PyTorch model (large file)
 dlmodel/model.pth
+
+# Claude Code
+.claude/
+.agents/
+skills-lock.json
